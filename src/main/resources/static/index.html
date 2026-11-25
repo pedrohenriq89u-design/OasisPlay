@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Oasis Music</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #121212;
+            color: white;
+        }
+
+        header {
+            background: #1db954;
+            color: black;
+            text-align: center;
+            padding: 30px;
+        }
+
+        header h1 {
+            font-size: 35px;
+            margin-bottom: 8px;
+        }
+
+        main {
+            max-width: 800px;
+            width: 90%;
+            margin: 30px auto;
+        }
+
+        .container {
+            background: #202020;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: #1db954;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 7px;
+            background: #333;
+            color: white;
+            outline: none;
+        }
+
+        input:focus {
+            border: 1px solid #1db954;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px 3px;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .salvar {
+            background: #1db954;
+            color: black;
+            width: 100%;
+        }
+
+        .editar {
+            background: #3498db;
+            color: white;
+        }
+
+        .excluir {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .cancelar {
+            background: #555;
+            color: white;
+        }
+
+        .atualizar {
+            background: #1db954;
+            color: black;
+            width: 100%;
+        }
+
+        .musica {
+            background: #333;
+            padding: 18px;
+            border-radius: 9px;
+            margin-bottom: 15px;
+            border-left: 4px solid #1db954;
+        }
+
+        .musica h3 {
+            color: #1db954;
+            margin-bottom: 10px;
+        }
+
+        .musica p {
+            margin: 6px 0;
+            color: #ddd;
+        }
+
+        .acoes {
+            margin-top: 12px;
+        }
+
+        #mensagem {
+            margin-bottom: 15px;
+            color: #1db954;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #888;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<header>
+    <h1>🎵 Oasis Music</h1>
+    <p>Seu espaço para suas músicas favoritas</p>
+</header>
+
+<main>
+
+    <!-- CADASTRO E EDIÇÃO -->
+
+    <div class="container">
+
+        <h2 id="tituloFormulario">🎧 Cadastrar Música</h2>
+
+        <form id="formMusica">
+
+            <input
+                    type="text"
+                    id="nome"
+                    placeholder="Nome da música"
+                    required
+            >
+
+            <input
+                    type="text"
+                    id="artista"
+                    placeholder="Nome do artista"
+                    required
+            >
+
+            <input
+                    type="text"
+                    id="album"
+                    placeholder="Nome do álbum"
+                    required
+            >
+
+            <input
+                    type="text"
+                    id="genero"
+                    placeholder="Gênero musical"
+                    required
+            >
+
+            <input
+                    type="number"
+                    id="duracao"
+                    placeholder="Duração em segundos"
+                    min="1"
+                    step="1"
+                    required
+            >
+
+            <button type="submit" class="salvar" id="botaoSalvar">
+                Cadastrar Música
+            </button>
+
+            <button
+                    type="button"
+                    class="cancelar"
+                    id="botaoCancelar"
+                    onclick="cancelarEdicao()"
+                    style="display:none"
+            >
+                Cancelar Edição
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- LISTAGEM -->
+
+    <div class="container">
+
+        <h2>🎶 Músicas Cadastradas</h2>
+
+        <p id="mensagem"></p>
+
+        <button class="atualizar" onclick="listarMusicas()">
+            Atualizar Lista
+        </button>
+
+        <div id="listaMusicas" style="margin-top:20px">
+            Carregando músicas...
+        </div>
+
+    </div>
+
+</main>
+
+<footer>
+    Oasis Music © 2026
+</footer>
+
+
+<script>
+
+    const API = "/api/musicas";
+
+    let idEdicao = null;
+
+
+    // CADASTRAR E ALTERAR MÚSICA
+
+    document.getElementById("formMusica")
+        .addEventListener("submit", async function(event) {
+
+            event.preventDefault();
+
+            const duracaoTexto =
+                document.getElementById("duracao").value;
+
+            const duracao = Number(duracaoTexto);
+
+            if (!Number.isInteger(duracao) || duracao <= 0) {
+                alert("Digite uma duração válida em segundos.");
+                return;
+            }
+
+            const musica = {
+
+                nome: document.getElementById("nome").value,
+                artista: document.getElementById("artista").value,
+                album: document.getElementById("album").value,
+                genero: document.getElementById("genero").value,
+                duracao: duracao
+
+            };
+
+            try {
+
+                let resposta;
+
+                if (idEdicao === null) {
+
+                    // CADASTRAR
+
+                    resposta = await fetch(API, {
+
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify(musica)
+
+                    });
+
+                } else {
+
+                    // ALTERAR
+
+                    resposta = await fetch(`${API}/${idEdicao}`, {
+
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify(musica)
+
+                    });
+
+                }
+
+                if (!resposta.ok) {
+                    throw new Error("Erro ao salvar música");
+                }
+
+                alert(
+                    idEdicao === null
+                        ? "Música cadastrada com sucesso!"
+                        : "Música alterada com sucesso!"
+                );
+
+                cancelarEdicao();
+
+                listarMusicas();
+
+            } catch (erro) {
+
+                alert("Erro ao salvar música. Verifique o servidor.");
+
+                console.error(erro);
+
+            }
+
+        });
+
+
+    // LISTAR MÚSICAS
+
+    async function listarMusicas() {
+
+        const lista = document.getElementById("listaMusicas");
+
+        lista.textContent = "Carregando músicas...";
+
+        try {
+
+            const resposta = await fetch(API);
+
+            if (!resposta.ok) {
+                throw new Error("Erro ao buscar músicas");
+            }
+
+            const musicas = await resposta.json();
+
+            lista.innerHTML = "";
+
+            if (musicas.length === 0) {
+
+                lista.textContent = "Nenhuma música cadastrada.";
+
+                return;
+
+            }
+
+            musicas.forEach(musica => {
+
+                const card = document.createElement("div");
+
+                card.className = "musica";
+
+                const titulo = document.createElement("h3");
+
+                titulo.textContent = "🎵 " + musica.nome;
+
+                card.appendChild(titulo);
+
+                const campos = [
+                    ["Artista", musica.artista],
+                    ["Álbum", musica.album],
+                    ["Gênero", musica.genero],
+                    ["Duração", musica.duracao + " segundos"],
+                    ["ID", musica.id]
+                ];
+
+                campos.forEach(([nome, valor]) => {
+
+                    const p = document.createElement("p");
+
+                    p.textContent = nome + ": " + valor;
+
+                    card.appendChild(p);
+
+                });
+
+                const acoes = document.createElement("div");
+
+                acoes.className = "acoes";
+
+                const botaoEditar = document.createElement("button");
+
+                botaoEditar.className = "editar";
+
+                botaoEditar.textContent = "✏️ Editar";
+
+                botaoEditar.onclick = function() {
+                    editarMusica(musica);
+                };
+
+                const botaoExcluir = document.createElement("button");
+
+                botaoExcluir.className = "excluir";
+
+                botaoExcluir.textContent = "🗑️ Excluir";
+
+                botaoExcluir.onclick = function() {
+                    deletarMusica(musica.id);
+                };
+
+                acoes.appendChild(botaoEditar);
+
+                acoes.appendChild(botaoExcluir);
+
+                card.appendChild(acoes);
+
+                lista.appendChild(card);
+
+            });
+
+        } catch (erro) {
+
+            lista.textContent =
+                "Erro ao carregar músicas. Verifique sua API.";
+
+            console.error(erro);
+
+        }
+
+    }
+
+
+    // EDITAR MÚSICA
+
+    function editarMusica(musica) {
+
+        idEdicao = musica.id;
+
+        document.getElementById("nome").value = musica.nome;
+
+        document.getElementById("artista").value = musica.artista;
+
+        document.getElementById("album").value = musica.album;
+
+        document.getElementById("genero").value = musica.genero;
+
+        document.getElementById("duracao").value = musica.duracao;
+
+        document.getElementById("tituloFormulario").textContent =
+            "✏️ Editar Música";
+
+        document.getElementById("botaoSalvar").textContent =
+            "Salvar Alterações";
+
+        document.getElementById("botaoCancelar").style.display =
+            "inline-block";
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+    }
+
+
+    // CANCELAR EDIÇÃO
+
+    function cancelarEdicao() {
+
+        idEdicao = null;
+
+        document.getElementById("formMusica").reset();
+
+        document.getElementById("tituloFormulario").textContent =
+            "🎧 Cadastrar Música";
+
+        document.getElementById("botaoSalvar").textContent =
+            "Cadastrar Música";
+
+        document.getElementById("botaoCancelar").style.display =
+            "none";
+
+    }
+
+
+    // DELETAR MÚSICA
+
+    async function deletarMusica(id) {
+
+        const confirmar = confirm(
+            "Tem certeza que deseja excluir esta música?"
+        );
+
+        if (!confirmar) {
+            return;
+        }
+
+        try {
+
+            const resposta = await fetch(`${API}/${id}`, {
+
+                method: "DELETE"
+
+            });
+
+            if (!resposta.ok) {
+                throw new Error("Erro ao excluir música");
+            }
+
+            alert("Música excluída com sucesso!");
+
+            if (idEdicao === id) {
+                cancelarEdicao();
+            }
+
+            listarMusicas();
+
+        } catch (erro) {
+
+            alert("Não foi possível excluir a música.");
+
+            console.error(erro);
+
+        }
+
+    }
+
+
+    // INICIAR LISTAGEM
+
+    listarMusicas();
+
+</script>
+
+</body>
+</html>
